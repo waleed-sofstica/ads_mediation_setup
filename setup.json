@@ -1,0 +1,14 @@
+{
+    "Google" : {
+        "appId":"KEY-OF-GOOGLE-ADS-123", 
+        "banner":"", 
+        "interstitial":"", 
+        "rewarded":"",
+        "sdkVersion":"1.2.3.4"
+    }, 
+    "AppLovin" : {
+        "doSetup": true, 
+        "sdk_version":"10.0.0",
+        "sdk_key":"KEY-OF-APPLOVIN-SDK-123"
+    }
+}

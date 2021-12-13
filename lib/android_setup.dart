@@ -12,6 +12,7 @@ import 'file_utils.dart';
 class AndroidSetup {
   final String PATH_MANIFEST = 'android/app/src/main/AndroidManifest.xml';
   final String APP_LEVEL_GRADLE = 'android/app/build.gradle';
+  final String PLIST_PATH = 'ios/Runner/Info.plist';
   final String jsonFilePath;
   late AppLovin _appLovin;
   late Google _google;
@@ -33,7 +34,57 @@ class AndroidSetup {
     }
   }
 
-  _platformSpecificSetup() async {
+  // IOS : Function to update the info.plist file (adding mediation setup)
+  _iosInfoPlistUpdate() async {
+    String plistData = await File(PLIST_PATH).readAsString();
+    final document = XmlDocument.parse(plistData);
+    List<XmlNode> keys = document
+        .findElements('plist')
+        .first
+        .findElements('dict')
+        .first
+        .children
+        .where((item) => item is XmlElement)
+        .toList();
+
+    bool _googleConfigured = false;
+    bool _appLovinConfigured = false;
+
+    for (int i = 0; i < keys.length; i++) {
+      if (keys[i].innerText == 'GADApplicationIdentifier') {
+        keys[i + 1].innerText = _google.appId;
+        _googleConfigured = true;
+      }
+      if (keys[i].innerText == 'AppLovinSdkKey') {
+        keys[i + 1].innerText = _appLovin.sdkKey;
+        _appLovinConfigured = true;
+      }
+    }
+
+    if (!_googleConfigured) {
+      var key = XmlElement(XmlName('key'));
+      key.innerText = 'GADApplicationIdentifier';
+      var value = XmlElement(XmlName('string'));
+      key.innerText = _google.appId;
+      keys.insert(0, value);
+      keys.insert(0, key);
+    }
+    if (!_appLovinConfigured) {
+      var key = XmlElement(XmlName('key'));
+      key.innerText = 'AppLovinSdkKey';
+
+      var value = XmlElement(XmlName('string'));
+      key.innerText = _appLovin.sdkKey;
+      keys.insert(0, value);
+      keys.insert(0, key);
+    }
+
+    String updatedPlistData = document.toXmlString(pretty: true, indent: '\t');
+    await _saveFile(PLIST_PATH, updatedPlistData);
+  }
+
+  // Android : Function to update the AndroidManifest.xml file (adding mediation setup)
+  _androidManifestUpdate() async {
     String manifestData = await File(PATH_MANIFEST).readAsString();
     final document = XmlDocument.parse(manifestData);
     List<XmlElement> metadatas = document.children.first
@@ -82,35 +133,61 @@ class AndroidSetup {
 
     String updatedManifestData =
         document.toXmlString(pretty: true, indent: '\t');
-    await _saveManifestFile(updatedManifestData);
+    await _saveFile(PATH_MANIFEST, updatedManifestData);
+  }
 
+  // Android : Function to update the app level build.gradle file (add sdk dependencies)
+  _buildGradleUpdate() async {
     String gradleData = await File(APP_LEVEL_GRADLE).readAsString();
-    var match = RegExp('dependencies+.*').firstMatch(gradleData);
-    String dep = match!.group(0)!;
-    int index = gradleData.indexOf(dep);
-    int index2 = gradleData.indexOf('}', index);
-    String dependencies = gradleData.substring(index, index2);
-    List<String> finalDependenceis = [];
-    dependencies.split('\n').forEach((element) {
-      element = element.trim();
-      if (element != '' &&
-          (!element.contains(_appLovin.sdk) || !element.contains(_google.sdk)))
-        finalDependenceis.add(element);
-    });
-    finalDependenceis
-        .add("\nimplementation \"${_appLovin.sdk}:${_appLovin.sdkVersion}\"");
-    finalDependenceis
-        .add("\nimplementation \"${_google.sdk}:${_google.sdkVersion}\"");
-    gradleData =
-        gradleData.replaceAll(dependencies, 'flag-to-add-new-dependencies');
+    String dependenciesBlock = RegExp(r'((dependencies)\s*(\{))(.|\n)*\}')
+        .firstMatch(gradleData)!
+        .group(0)!;
 
-    String finalDepString = '';
-    finalDependenceis.forEach((element) {
-      finalDepString += element + '\n';
-    });
+    List<String> dependencies = RegExp(r'\{([^}]+)\}')
+        .firstMatch(dependenciesBlock)!
+        .group(0)!
+        .replaceAll('{', '')
+        .replaceAll('}', '')
+        .split('\n');
+    dependencies.removeWhere((element) => element == '');
+    dependencies =
+        _addDependency(dependencies, _google.sdk, _google.sdkVersion);
+
+    dependencies =
+        _addDependency(dependencies, _appLovin.sdk, _appLovin.sdkVersion);
+    var str = dependencies.join('\n');
+    String updatedDependenciesBlock = "dependencies {\n$str\n}";
+
     gradleData =
-        gradleData.replaceAll('flag-to-add-new-dependencies', finalDepString);
+        gradleData.replaceAll(dependenciesBlock, updatedDependenciesBlock);
     await File(APP_LEVEL_GRADLE).writeAsString(gradleData);
+  }
+
+  // Function to add sdk implementation in build.gradle file
+  _addDependency(List<String> dependencies, String depPath, String depVersion) {
+    List<String> result = [];
+    bool alreadyExists = false;
+    dependencies.forEach((dependency) {
+      String toAdd = '';
+      if (dependency.contains(depPath)) {
+        toAdd = "implementation \"$depPath:$depVersion\"";
+        alreadyExists = true;
+      } else {
+        toAdd = dependency.trim();
+      }
+      result.add(toAdd);
+    });
+    if (!alreadyExists) {
+      result.add("implementation \"$depPath:$depVersion\"");
+    }
+
+    return result;
+  }
+
+  _platformSpecificSetup() async {
+    // _androidManifestUpdate();
+    // _buildGradleUpdate();
+    _iosInfoPlistUpdate();
   }
 
   _loadObjects(String filePath) async {
@@ -125,5 +202,9 @@ class AndroidSetup {
 
   Future<File> _saveManifestFile(String fileData) async {
     return await File(PATH_MANIFEST).writeAsString(fileData);
+  }
+
+  Future<File> _saveFile(String filePath, String data) async {
+    return await File(filePath).writeAsString(data);
   }
 }

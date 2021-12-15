@@ -36,50 +36,66 @@ class AndroidSetup {
 
   // IOS : Function to update the info.plist file (adding mediation setup)
   _iosInfoPlistUpdate() async {
+    // Reading Info.plist contents from file
     String plistData = await File(PLIST_PATH).readAsString();
+    // Creating xml object
     final document = XmlDocument.parse(plistData);
-    List<XmlNode> keys = document
+    // Extracting the keys from the Info.plist file which is at <plist><dict>(all keys are here)</dict></plist>
+    var keys = document
         .findElements('plist')
         .first
         .findElements('dict')
         .first
-        .children
-        .where((item) => item is XmlElement)
-        .toList();
+        .children;
+    // Removing xml elements which are generated due to line breaks (this xml parser is creating xml element as 'XmlText' for line breaks)
+    keys.removeWhere((element) => element is XmlText);
 
+    // Flags to know whether the configuration of any of the following already exists in Info.plist
     bool _googleConfigured = false;
     bool _appLovinConfigured = false;
 
     for (int i = 0; i < keys.length; i++) {
+      // Will be true if google is already configured
       if (keys[i].innerText == 'GADApplicationIdentifier') {
-        keys[i + 1].innerText = _google.appId;
+        var value = XmlElement(XmlName('string'));
+        value.innerText = _google.appId;
+        keys.removeAt(i + 1);
+        keys.insert(i + 1, value);
         _googleConfigured = true;
       }
+      // Will be true if appLovin is already configured
       if (keys[i].innerText == 'AppLovinSdkKey') {
-        keys[i + 1].innerText = _appLovin.sdkKey;
+        var value = XmlElement(XmlName('string'));
+        value.innerText = _appLovin.sdkKey;
+        keys.removeAt(i + 1);
+        keys.insert(i + 1, value);
         _appLovinConfigured = true;
       }
     }
 
+    // Will be true when google is not already configured
     if (!_googleConfigured) {
       var key = XmlElement(XmlName('key'));
       key.innerText = 'GADApplicationIdentifier';
       var value = XmlElement(XmlName('string'));
-      key.innerText = _google.appId;
+      value.innerText = _google.appId;
       keys.insert(0, value);
       keys.insert(0, key);
     }
+    // Will be true when appLovin is not already configured
     if (!_appLovinConfigured) {
       var key = XmlElement(XmlName('key'));
       key.innerText = 'AppLovinSdkKey';
 
       var value = XmlElement(XmlName('string'));
-      key.innerText = _appLovin.sdkKey;
+      value.innerText = _appLovin.sdkKey;
       keys.insert(0, value);
       keys.insert(0, key);
     }
 
+    // Prettifying (formatting) updated Info.plist data
     String updatedPlistData = document.toXmlString(pretty: true, indent: '\t');
+    // Saving the updated Info.plist data
     await _saveFile(PLIST_PATH, updatedPlistData);
   }
 

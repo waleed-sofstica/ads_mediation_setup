@@ -13,6 +13,8 @@ class AndroidSetup {
   final String PATH_MANIFEST = 'android/app/src/main/AndroidManifest.xml';
   final String APP_LEVEL_GRADLE = 'android/app/build.gradle';
   final String PLIST_PATH = 'ios/Runner/Info.plist';
+  final String PODFILE_PATH = 'ios/Podfile';
+
   final String jsonFilePath;
   late AppLovin _appLovin;
   late Google _google;
@@ -24,6 +26,10 @@ class AndroidSetup {
             android:name="applovin.sdk.key"
             android:value="APPLOVIN_SDK_KEY_HERE" />""";
 
+  final String PODFILE_GOOGLE_IMPORT = """pod 'Google-Mobile-Ads-SDK'""";
+  final String PODFILE_APPLOVIN_IMPORT =
+      """pod 'GoogleMobileAdsMediationAppLovin'""";
+
   AndroidSetup(this.jsonFilePath);
   Future<void> process() async {
     if (await fileExists(jsonFilePath)) {
@@ -32,6 +38,31 @@ class AndroidSetup {
     } else {
       print('The json file you provided doesnt exists!');
     }
+  }
+
+  // IOS : Function to update the Podfile file (add sdk dependencies)
+  _iosPodfileUpdate() async {
+    // Reading Podfile contents from file
+    String plistData = await File(PODFILE_PATH).readAsString();
+
+    // Reg expression match to find dependency import for google ads
+    RegExp google = RegExp(r"(pod)\s*'Google-Mobile-Ads-SDK'");
+    String? googleImport = google.firstMatch(plistData)?.group(0);
+
+    // Reg expression match to find dependency import for appLovin ads
+    RegExp appLovin = RegExp(r"(pod)\s*'GoogleMobileAdsMediationAppLovin'");
+    String? appLovinImport = appLovin.firstMatch(plistData)?.group(0);
+
+    // Adding google ads dependency import when dependency import doesnt exists for google ads
+    if (googleImport == null) {
+      plistData += '\n$PODFILE_GOOGLE_IMPORT';
+    }
+    // Adding appLovin ads dependency import when dependency import doesnt exists for appLovin ads
+    if (appLovinImport == null) {
+      plistData += '\n$PODFILE_APPLOVIN_IMPORT';
+    }
+    // Saving the updated Podfile
+    await _saveFile(PODFILE_PATH, plistData);
   }
 
   // IOS : Function to update the info.plist file (adding mediation setup)
@@ -203,7 +234,8 @@ class AndroidSetup {
   _platformSpecificSetup() async {
     // _androidManifestUpdate();
     // _buildGradleUpdate();
-    _iosInfoPlistUpdate();
+    // _iosInfoPlistUpdate();
+    _iosPodfileUpdate();
   }
 
   _loadObjects(String filePath) async {

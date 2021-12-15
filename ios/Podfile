@@ -36,5 +36,5 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
   end
 end
-
+pod 'Google-Mobile-Ads-SDK'
 pod 'GoogleMobileAdsMediationAppLovin'

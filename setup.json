@@ -1,11 +1,17 @@
 {
     "Google" : {
-        "appId":"ca-app-pub-3940256099942544~3347511713", 
-        "banner":"", 
-        "adManagerBanner":"",
-        "interstitial":"", 
-        "rewarded":"",
-        "sdkVersion":"1.2.3.4"
+
+        "appIdIOS":"ca-app-pub-3940256099942544~3347511713", 
+        "bannerIOS":"", 
+        "adManagerBannerIOS":"",
+        "interstitialIOS":"", 
+        "rewardedIOS":"",
+        "appIdAndroid":"ca-app-pub-3940256099942544~3347511713", 
+        "bannerAndroid":"", 
+        "adManagerBannerAndroid":"",
+        "interstitialAndroid":"", 
+        "rewardedAndroid":"",
+        "sdkVersion":"10.2.0"
     }, 
     "AppLovin" : {
         "doSetup": false, 

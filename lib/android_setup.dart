@@ -104,7 +104,7 @@ class AndroidSetup {
       // Will be true if google is already configured
       if (keys[i].innerText == 'GADApplicationIdentifier') {
         var value = XmlElement(XmlName('string'));
-        value.innerText = _google.appId;
+        value.innerText = _google.appIdIOS;
         keys.removeAt(i + 1);
         keys.insert(i + 1, value);
         _googleConfigured = true;
@@ -124,7 +124,7 @@ class AndroidSetup {
       var key = XmlElement(XmlName('key'));
       key.innerText = 'GADApplicationIdentifier';
       var value = XmlElement(XmlName('string'));
-      value.innerText = _google.appId;
+      value.innerText = _google.appIdIOS;
       keys.insert(0, value);
       keys.insert(0, key);
     }
@@ -164,7 +164,7 @@ class AndroidSetup {
       if (element.attributes[0].value ==
           'com.google.android.gms.ads.APPLICATION_ID') {
         application.remove(element);
-        element.attributes[1].value = _google.appId;
+        element.attributes[1].value = _google.appIdAndroid;
         application.insert(0, element);
         _googleConfigured = true;
       }
@@ -181,7 +181,7 @@ class AndroidSetup {
       var nameAttr = XmlAttribute(
           XmlName('android:name'), 'com.google.android.gms.ads.APPLICATION_ID');
       var valueAttr =
-          XmlAttribute(XmlName('android:value'), '${_google.appId}');
+          XmlAttribute(XmlName('android:value'), '${_google.appIdAndroid}');
       application.insert(
           0, XmlElement(XmlName('meta-data'), [nameAttr, valueAttr]));
     }
@@ -202,17 +202,33 @@ class AndroidSetup {
   // Android : Function to update the app level build.gradle file (add sdk dependencies)
   _buildGradleUpdate() async {
     String gradleData = await File(APP_LEVEL_GRADLE).readAsString();
-    String dependenciesBlock = RegExp(r'((dependencies)\s*(\{))(.|\n)*\}')
-        .firstMatch(gradleData)!
-        .group(0)!;
+    String dependenciesBlock =
+        RegExp(r'(dependencies)\s*.*{').firstMatch(gradleData)!.group(0)!;
 
-    List<String> dependencies = RegExp(r'\{([^}]+)\}')
-        .firstMatch(dependenciesBlock)!
-        .group(0)!
+    int stack = 0;
+    int startIndex = gradleData.indexOf(dependenciesBlock);
+    int mainDataLength = gradleData.length;
+    int endIndex = -1;
+    for (int i = startIndex; i < mainDataLength; i++) {
+      if (gradleData[i] == '{') {
+        stack++;
+      } else if (gradleData[i] == '}') {
+        stack--;
+        if (stack == 0) {
+          endIndex = i + 1;
+          break;
+        }
+      }
+    }
+
+    String dependenciesBlockData = gradleData.substring(startIndex, endIndex);
+
+    List<String> dependencies = dependenciesBlockData
         .replaceAll('{', '')
         .replaceAll('}', '')
+        .replaceAll('dependencies', '')
         .split('\n');
-    dependencies.removeWhere((element) => element == '');
+    dependencies.removeWhere((element) => element.trim() == '');
     dependencies =
         _addDependency(dependencies, _google.sdk, _google.sdkVersion);
 
@@ -225,7 +241,7 @@ class AndroidSetup {
     String updatedDependenciesBlock = "dependencies {\n$str\n}";
 
     gradleData =
-        gradleData.replaceAll(dependenciesBlock, updatedDependenciesBlock);
+        gradleData.replaceAll(dependenciesBlockData, updatedDependenciesBlock);
     await File(APP_LEVEL_GRADLE).writeAsString(gradleData);
   }
 
@@ -236,7 +252,7 @@ class AndroidSetup {
     dependencies.forEach((dependency) {
       String toAdd = '';
       if (dependency.contains(depPath)) {
-        toAdd = "implementation \"$depPath:$depVersion\"";
+        toAdd = "implementation \"$depPath$depVersion\"";
         alreadyExists = true;
       } else {
         toAdd = dependency.trim();
@@ -244,7 +260,7 @@ class AndroidSetup {
       result.add(toAdd);
     });
     if (!alreadyExists) {
-      result.add("implementation \"$depPath:$depVersion\"");
+      result.add("implementation \"$depPath$depVersion\"");
     }
 
     return result;
@@ -260,54 +276,50 @@ class AndroidSetup {
     print(_google.toJson());
 
     // Generating code file for ad unit ids in users lib/ad_unit_ids
-    String adUnitIdClass = """class AdUnitId {
-  static String banner = '';
-  static String adManagerBanner = '';
-  static String interstitial = '';
-  static String rewarded = '';
+    String adUnitIdClass = """import 'dart:io';
+
+class AdUnitId {
+  static String banner = Platform.isAndroid ? '' : '';
+  static String adManagerBanner = Platform.isAndroid ? '' : '';
+  static String interstitial = Platform.isAndroid ? '' : '';
+  static String rewarded = Platform.isAndroid ? '' : '';
 }
+
 """;
 
     // Adding banner ad id
-    if (_google.banner != '') {
-      String? exp = RegExp(r'(static)\s*(String)\s*banner\s*=(\s*).*[\;]')
-          .firstMatch(adUnitIdClass)
-          ?.group(0);
-      if (exp != null)
-        adUnitIdClass = adUnitIdClass.replaceAll(
-            exp, "static String banner = '${_google.banner}';");
-    }
+
+    String? exp = RegExp(r'(static)\s*(String)\s*banner\s*=(\s*).*[\;]')
+        .firstMatch(adUnitIdClass)
+        ?.group(0);
+    if (exp != null)
+      adUnitIdClass = adUnitIdClass.replaceAll(exp,
+          "static String banner = Platform.isAndroid ? '${_google.bannerAndroid}' : '${_google.bannerIOS}';");
 
     // Adding ad manager banner ad id
-    if (_google.adManagerBanner != '') {
-      String? exp =
-          RegExp(r'(static)\s*(String)\s*adManagerBanner\s*=(\s*).*[\;]')
-              .firstMatch(adUnitIdClass)
-              ?.group(0);
-      if (exp != null)
-        adUnitIdClass = adUnitIdClass.replaceAll(exp,
-            "static String adManagerBanner = '${_google.adManagerBanner}';");
-    }
+    exp = RegExp(r'(static)\s*(String)\s*adManagerBanner\s*=(\s*).*[\;]')
+        .firstMatch(adUnitIdClass)
+        ?.group(0);
+    if (exp != null)
+      adUnitIdClass = adUnitIdClass.replaceAll(exp,
+          "static String adManagerBanner = Platform.isAndroid ? '${_google.adManagerBannerAndroid}' : '${_google.adManagerBannerIOS}';");
 
     // Adding interstitial ad id
-    if (_google.interstitial != '') {
-      String? exp = RegExp(r'(static)\s*(String)\s*interstitial\s*=(\s*).*[\;]')
-          .firstMatch(adUnitIdClass)
-          ?.group(0);
-      if (exp != null)
-        adUnitIdClass = adUnitIdClass.replaceAll(
-            exp, "static String interstitial = '${_google.interstitial}';");
-    }
-
+    exp = RegExp(r'(static)\s*(String)\s*interstitial\s*=(\s*).*[\;]')
+        .firstMatch(adUnitIdClass)
+        ?.group(0);
+    if (exp != null)
+      adUnitIdClass = adUnitIdClass.replaceAll(exp,
+          "static String interstitial = Platform.isAndroid ? '${_google.interstitialAndroid}' : '${_google.interstitialIOS}';");
     // Adding rewarded ad id
-    if (_google.rewarded != '') {
-      String? exp = RegExp(r'(static)\s*(String)\s*rewarded\s*=(\s*).*[\;]')
-          .firstMatch(adUnitIdClass)
-          ?.group(0);
-      if (exp != null)
-        adUnitIdClass = adUnitIdClass.replaceAll(
-            exp, "static String rewarded = '${_google.rewarded}';");
-    }
+
+    exp = RegExp(r'(static)\s*(String)\s*rewarded\s*=(\s*).*[\;]')
+        .firstMatch(adUnitIdClass)
+        ?.group(0);
+    if (exp != null)
+      adUnitIdClass = adUnitIdClass.replaceAll(exp,
+          "static String rewarded = Platform.isAndroid ? '${_google.rewardedAndroid}' : '${_google.rewardedIOS}';");
+
     File(AD_UNIT_ID_PATH).create(recursive: true);
     await Future.delayed(Duration(seconds: 5)).then((value) {
       _saveFile(AD_UNIT_ID_PATH, adUnitIdClass);
@@ -325,11 +337,9 @@ class AndroidSetup {
   _getMainCode() async {
     String mainData = await File(MAIN_PATH).readAsString();
 
-    int stack = 0;
-
     String mainOpening =
         RegExp(r'(main\(\))\s*.*{').firstMatch(mainData)!.group(0)!;
-
+    int stack = 0;
     int startIndex = mainData.indexOf(mainOpening);
     int mainDataLength = mainData.length;
     int endIndex = -1;

@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'dart:io';
 
+import 'package:ads_mediation_setup/copy_dir.dart';
 import 'package:ads_mediation_setup/models/app_lovin.dart';
 import 'package:ads_mediation_setup/models/google.dart';
 import 'package:ads_mediation_setup/models/tag.dart';
@@ -14,6 +16,8 @@ class AndroidSetup {
   final String APP_LEVEL_GRADLE = 'android/app/build.gradle';
   final String PLIST_PATH = 'ios/Runner/Info.plist';
   final String PODFILE_PATH = 'ios/Podfile';
+  final String AD_UNIT_ID_PATH = 'lib/ad_unit_ids/ad_unit_id.dart';
+  final String MAIN_PATH = 'lib/main.dart';
 
   final String jsonFilePath;
   late AppLovin _appLovin;
@@ -35,9 +39,21 @@ class AndroidSetup {
     if (await fileExists(jsonFilePath)) {
       _loadObjects(jsonFilePath);
       _platformSpecificSetup();
+      _getMainCode();
     } else {
       print('The json file you provided doesnt exists!');
     }
+  }
+
+  _nativeCodeGeneration() {}
+
+  _platformSpecificSetup() async {
+    Future.delayed(Duration(seconds: 2)).then((value) {
+      _androidManifestUpdate();
+      _buildGradleUpdate();
+      _iosInfoPlistUpdate();
+      _iosPodfileUpdate();
+    });
   }
 
   // IOS : Function to update the Podfile file (add sdk dependencies)
@@ -58,7 +74,7 @@ class AndroidSetup {
       plistData += '\n$PODFILE_GOOGLE_IMPORT';
     }
     // Adding appLovin ads dependency import when dependency import doesnt exists for appLovin ads
-    if (appLovinImport == null) {
+    if (_appLovin.doSetup && appLovinImport == null) {
       plistData += '\n$PODFILE_APPLOVIN_IMPORT';
     }
     // Saving the updated Podfile
@@ -95,7 +111,7 @@ class AndroidSetup {
         _googleConfigured = true;
       }
       // Will be true if appLovin is already configured
-      if (keys[i].innerText == 'AppLovinSdkKey') {
+      if (_appLovin.doSetup && keys[i].innerText == 'AppLovinSdkKey') {
         var value = XmlElement(XmlName('string'));
         value.innerText = _appLovin.sdkKey;
         keys.removeAt(i + 1);
@@ -114,7 +130,7 @@ class AndroidSetup {
       keys.insert(0, key);
     }
     // Will be true when appLovin is not already configured
-    if (!_appLovinConfigured) {
+    if (_appLovin.doSetup && !_appLovinConfigured) {
       var key = XmlElement(XmlName('key'));
       key.innerText = 'AppLovinSdkKey';
 
@@ -153,7 +169,8 @@ class AndroidSetup {
         application.insert(0, element);
         _googleConfigured = true;
       }
-      if (element.attributes[0].value == 'applovin.sdk.key') {
+      if (_appLovin.doSetup &&
+          element.attributes[0].value == 'applovin.sdk.key') {
         element.attributes[1].value = _appLovin.sdkKey;
         application.remove(element);
         application.insert(0, element);
@@ -170,7 +187,7 @@ class AndroidSetup {
           0, XmlElement(XmlName('meta-data'), [nameAttr, valueAttr]));
     }
 
-    if (!_appLovinConfigured) {
+    if (_appLovin.doSetup && !_appLovinConfigured) {
       var nameAttr = XmlAttribute(XmlName('android:name'), 'applovin.sdk.key');
       var valueAttr =
           XmlAttribute(XmlName('android:value'), '${_appLovin.sdkKey}');
@@ -200,8 +217,11 @@ class AndroidSetup {
     dependencies =
         _addDependency(dependencies, _google.sdk, _google.sdkVersion);
 
-    dependencies =
-        _addDependency(dependencies, _appLovin.sdk, _appLovin.sdkVersion);
+    if (_appLovin.doSetup) {
+      dependencies =
+          _addDependency(dependencies, _appLovin.sdk, _appLovin.sdkVersion);
+    }
+
     var str = dependencies.join('\n');
     String updatedDependenciesBlock = "dependencies {\n$str\n}";
 
@@ -231,13 +251,6 @@ class AndroidSetup {
     return result;
   }
 
-  _platformSpecificSetup() async {
-    // _androidManifestUpdate();
-    // _buildGradleUpdate();
-    // _iosInfoPlistUpdate();
-    _iosPodfileUpdate();
-  }
-
   _loadObjects(String filePath) async {
     String jsonAsString = await File(filePath).readAsString();
     var decodedJsonFile = json.decode(jsonAsString) as Map<String, dynamic>;
@@ -246,6 +259,60 @@ class AndroidSetup {
 
     print(_appLovin.toJson());
     print(_google.toJson());
+
+    // Generating code file for ad unit ids in users lib/ad_unit_ids
+    String adUnitIdClass = """class AdUnitId {
+  static String banner = '';
+  static String adManagerBanner = '';
+  static String interstitial = '';
+  static String rewarded = '';
+}
+""";
+
+    // Adding banner ad id
+    if (_google.banner != '') {
+      String? exp = RegExp(r'(static)\s*(String)\s*banner\s*=(\s*).*[\;]')
+          .firstMatch(adUnitIdClass)
+          ?.group(0);
+      if (exp != null)
+        adUnitIdClass = adUnitIdClass.replaceAll(
+            exp, "static String banner = '${_google.banner}';");
+    }
+
+    // Adding ad manager banner ad id
+    if (_google.adManagerBanner != '') {
+      String? exp =
+          RegExp(r'(static)\s*(String)\s*adManagerBanner\s*=(\s*).*[\;]')
+              .firstMatch(adUnitIdClass)
+              ?.group(0);
+      if (exp != null)
+        adUnitIdClass = adUnitIdClass.replaceAll(exp,
+            "static String adManagerBanner = '${_google.adManagerBanner}';");
+    }
+
+    // Adding interstitial ad id
+    if (_google.interstitial != '') {
+      String? exp = RegExp(r'(static)\s*(String)\s*interstitial\s*=(\s*).*[\;]')
+          .firstMatch(adUnitIdClass)
+          ?.group(0);
+      if (exp != null)
+        adUnitIdClass = adUnitIdClass.replaceAll(
+            exp, "static String interstitial = '${_google.interstitial}';");
+    }
+
+    // Adding rewarded ad id
+    if (_google.rewarded != '') {
+      String? exp = RegExp(r'(static)\s*(String)\s*rewarded\s*=(\s*).*[\;]')
+          .firstMatch(adUnitIdClass)
+          ?.group(0);
+      if (exp != null)
+        adUnitIdClass = adUnitIdClass.replaceAll(
+            exp, "static String rewarded = '${_google.rewarded}';");
+    }
+    File(AD_UNIT_ID_PATH).create(recursive: true);
+    await Future.delayed(Duration(seconds: 5)).then((value) {
+      _saveFile(AD_UNIT_ID_PATH, adUnitIdClass);
+    });
   }
 
   Future<File> _saveManifestFile(String fileData) async {
@@ -254,5 +321,49 @@ class AndroidSetup {
 
   Future<File> _saveFile(String filePath, String data) async {
     return await File(filePath).writeAsString(data);
+  }
+
+  _getMainCode() async {
+    String mainData = await File(MAIN_PATH).readAsString();
+
+    int stack = 0;
+
+    String mainOpening =
+        RegExp(r'(main\(\))\s*.*{').firstMatch(mainData)!.group(0)!;
+
+    int startIndex = mainData.indexOf(mainOpening);
+    int mainDataLength = mainData.length;
+    int endIndex = -1;
+    for (int i = startIndex; i < mainDataLength; i++) {
+      if (mainData[i] == '{') {
+        stack++;
+      } else if (mainData[i] == '}') {
+        stack--;
+        if (stack == 0) {
+          endIndex = i + 1;
+          break;
+        }
+      }
+    }
+    String mainFunc = mainData.substring(startIndex, endIndex);
+    String newMainFunc =
+        mainFunc.replaceAll('WidgetsFlutterBinding.ensureInitialized();', '');
+
+    String newMainOpening = mainOpening +
+        """\nWidgetsFlutterBinding.ensureInitialized();
+  // Initialize the SDK before making an ad request.
+  // You can check each adapter's initialization status in the callback.
+  MobileAds.instance.initialize().then((initializationStatus) {
+    initializationStatus.adapterStatuses.forEach((key, value) {
+      debugPrint('Adapter status for \$key: \${value.description}');
+    });
+  });""";
+
+    newMainFunc = newMainFunc.replaceAll(mainOpening, newMainOpening);
+    mainData = mainData.replaceAll(mainFunc, newMainFunc);
+
+    mainData = "import 'package:google_mobile_ads/google_mobile_ads.dart';\n" +
+        mainData;
+    _saveFile(MAIN_PATH, mainData);
   }
 }

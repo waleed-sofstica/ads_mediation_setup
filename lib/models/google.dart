@@ -1,6 +1,8 @@
 class Google {
   late String appId;
   late String banner;
+  late String adManagerBanner;
+
   late String interstitial;
   late String rewarded;
   final String sdk = 'com.google.android.gms:play-services-ads:';
@@ -10,12 +12,14 @@ class Google {
       {required this.appId,
       required this.sdkVersion,
       required this.banner,
+      required this.adManagerBanner,
       required this.interstitial,
       required this.rewarded});
 
   Google.fromJson(Map<String, dynamic> json) {
     appId = json['appId'];
     banner = json['banner'];
+    adManagerBanner = json['adManagerBanner'];
     interstitial = json['interstitial'];
     rewarded = json['rewarded'];
     sdkVersion = json['sdkVersion'];
@@ -25,6 +29,7 @@ class Google {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['appId'] = this.appId;
     data['banner'] = this.banner;
+    data['adManagerBanner'] = this.adManagerBanner;
     data['interstitial'] = this.interstitial;
     data['rewarded'] = this.rewarded;
     data['sdkVersion'] = this.sdkVersion;

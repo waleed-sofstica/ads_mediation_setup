@@ -7,6 +7,10 @@ maintainer: Atiq Samtia (@AtiqSamtia)
 homepage: https://github.com/atiqsamtia/ads_mediation_setup
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: ">=2.12.0 <3.0.0"
 dependencies:
+  flutter:
+    sdk: flutter
+  google_mobile_ads: ^1.0.1
+  path: ^1.8.0
   xml: ^5.1.2

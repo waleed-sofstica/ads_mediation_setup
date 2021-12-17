@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:ads_mediation_setup/google_ads/ad_unit_id.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class BannerAdsProvider {

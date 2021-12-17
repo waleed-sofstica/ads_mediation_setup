@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'dart:io';
 
-import 'package:ads_mediation_setup/copy_dir.dart';
 import 'package:ads_mediation_setup/models/app_lovin.dart';
 import 'package:ads_mediation_setup/models/google.dart';
 import 'package:ads_mediation_setup/models/tag.dart';

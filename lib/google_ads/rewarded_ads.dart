@@ -47,6 +47,9 @@ class RewardedAdsProvider {
   }
 
   void _createRewardedAd() {
+    if (rewardedAdId.isEmpty) {
+      print('RewardedAdId: $rewardedAdId');
+    }
     RewardedAd.load(
         adUnitId: rewardedAdId.isEmpty ? RewardedAd.testAdUnitId : rewardedAdId,
         request: request,

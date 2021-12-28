@@ -3,7 +3,7 @@
 <plist version="1.0">
 	<dict>
 		<key>GADApplicationIdentifier</key>
-		<string>KEY-OF-GOOGLE-ADS-123</string>
+		<string>ios-app-id</string>
 		<key>AppLovinSdkKey</key>
 		<string>KEY-OF-APPLOVIN-SDK-123</string>
 		<key>CFBundleDevelopmentRegion</key>

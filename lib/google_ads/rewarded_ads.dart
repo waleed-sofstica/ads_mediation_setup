@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -51,7 +52,11 @@ class RewardedAdsProvider {
       print('RewardedAdId: $rewardedAdId');
     }
     RewardedAd.load(
-        adUnitId: rewardedAdId.isEmpty ? RewardedAd.testAdUnitId : rewardedAdId,
+        adUnitId: rewardedAdId.isEmpty
+            ? RewardedAd.testAdUnitId
+            : kReleaseMode
+                ? rewardedAdId
+                : RewardedAd.testAdUnitId,
         request: request,
         rewardedAdLoadCallback: RewardedAdLoadCallback(
           onAdLoaded: (RewardedAd ad) {
@@ -60,7 +65,11 @@ class RewardedAdsProvider {
             _numRewardedLoadAttempts = 0;
           },
           onAdFailedToLoad: (LoadAdError error) {
+            var adId =
+                rewardedAdId.isEmpty ? RewardedAd.testAdUnitId : rewardedAdId;
             print('RewardedAd failed to load: $error');
+            print('RewardedAd Id: $adId');
+            print('RewardedAd attempts : $_numRewardedLoadAttempts');
             _rewardedAd = null;
             _numRewardedLoadAttempts += 1;
             if (_numRewardedLoadAttempts <= maxFailedLoadAttempts) {

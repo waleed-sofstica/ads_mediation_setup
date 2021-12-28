@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class BannerAdsProvider {
@@ -20,7 +21,11 @@ class BannerAdsProvider {
   void _initialize() {
     _bannerAd = BannerAd(
         size: AdSize.banner,
-        adUnitId: bannerAdId.isEmpty ? BannerAd.testAdUnitId : bannerAdId,
+        adUnitId: bannerAdId.isEmpty
+            ? BannerAd.testAdUnitId
+            : kReleaseMode
+                ? bannerAdId
+                : BannerAd.testAdUnitId,
         listener: BannerAdListener(
           onAdLoaded: (Ad ad) {
             print('$BannerAd loaded.');

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdManagerBannerProvider {
@@ -21,7 +22,9 @@ class AdManagerBannerProvider {
     _adManagerBannerAd = AdManagerBannerAd(
       adUnitId: adManagerBannerAdId.isEmpty
           ? '/6499/example/banner'
-          : adManagerBannerAdId,
+          : kReleaseMode
+              ? adManagerBannerAdId
+              : '/6499/example/banner',
       request: AdManagerAdRequest(nonPersonalizedAds: true),
       sizes: <AdSize>[adSize],
       listener: AdManagerBannerAdListener(

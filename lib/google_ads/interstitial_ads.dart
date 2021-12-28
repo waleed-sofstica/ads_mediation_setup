@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -25,7 +26,9 @@ class InterstitialAdsProvider {
     InterstitialAd.load(
       adUnitId: interstitialAdId.isEmpty
           ? InterstitialAd.testAdUnitId
-          : interstitialAdId,
+          : kReleaseMode
+              ? interstitialAdId
+              : InterstitialAd.testAdUnitId,
       request: request,
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (InterstitialAd ad) {

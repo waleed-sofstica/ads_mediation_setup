@@ -17,5 +17,10 @@
         "doSetup": false, 
         "sdk_version":"10.0.0",
         "sdk_key":"KEY-OF-APPLOVIN-SDK-123"
+    },
+
+    "Facebook" : {
+        "doSetup": true, 
+        "sdk_version":"6.8.0.0"
     }
 }

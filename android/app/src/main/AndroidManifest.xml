@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.mediation_plugin_test">
 	<application android:label="mediation_plugin_test" android:icon="@mipmap/ic_launcher">
-		<meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="android-app-id"/>
+		<meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>
 		<meta-data android:name="applovin.sdk.key" android:value="KEY-OF-APPLOVIN-SDK-123"/>
 		<activity android:name=".MainActivity" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
 			<!-- Specifies an Android theme to apply to this Activity as soon as

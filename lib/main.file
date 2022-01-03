@@ -25,6 +25,9 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:ads_mediation_setup/google_ads/interstitial_ads.dart';
 import 'package:ads_mediation_setup/google_ads/rewarded_ads.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -34,6 +37,30 @@ import 'ad_unit_ids/ad_unit_id.dart';
 
 void main() {
 WidgetsFlutterBinding.ensureInitialized();
+  // Initialize the SDK before making an ad request.
+  // You can check each adapter's initialization status in the callback.
+  MobileAds.instance.initialize().then((initializationStatus) {
+    initializationStatus.adapterStatuses.forEach((key, value) {
+      debugPrint('Adapter status for $key: ${value.description}');
+    });
+  });
+
+  // Initialize the SDK before making an ad request.
+  // You can check each adapter's initialization status in the callback.
+  MobileAds.instance.initialize().then((initializationStatus) {
+    initializationStatus.adapterStatuses.forEach((key, value) {
+      debugPrint('Adapter status for $key: ${value.description}');
+    });
+  });
+
+  // Initialize the SDK before making an ad request.
+  // You can check each adapter's initialization status in the callback.
+  MobileAds.instance.initialize().then((initializationStatus) {
+    initializationStatus.adapterStatuses.forEach((key, value) {
+      debugPrint('Adapter status for $key: ${value.description}');
+    });
+  });
+
   // Initialize the SDK before making an ad request.
   // You can check each adapter's initialization status in the callback.
   MobileAds.instance.initialize().then((initializationStatus) {

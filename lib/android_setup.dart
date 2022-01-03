@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:ads_mediation_setup/models/app_lovin.dart';
+import 'package:ads_mediation_setup/models/facebook.dart';
 import 'package:ads_mediation_setup/models/google.dart';
 import 'package:ads_mediation_setup/models/tag.dart';
 import 'package:xml/xml.dart';
@@ -21,6 +22,7 @@ class AndroidSetup {
   final String jsonFilePath;
   late AppLovin _appLovin;
   late Google _google;
+  late Facebook _facebook;
 
   final String APPLICATION_ID = """\n        <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
@@ -32,6 +34,9 @@ class AndroidSetup {
   final String PODFILE_GOOGLE_IMPORT = """pod 'Google-Mobile-Ads-SDK'""";
   final String PODFILE_APPLOVIN_IMPORT =
       """pod 'GoogleMobileAdsMediationAppLovin'""";
+
+  final String PODFILE_FACEBOOK_IMPORT =
+      """pod 'GoogleMobileAdsMediationFacebook'""";
 
   AndroidSetup(this.jsonFilePath);
   Future<void> process() async {
@@ -68,6 +73,10 @@ class AndroidSetup {
     RegExp appLovin = RegExp(r"(pod)\s*'GoogleMobileAdsMediationAppLovin'");
     String? appLovinImport = appLovin.firstMatch(plistData)?.group(0);
 
+    // Reg expression match to find dependency import for Facebook ads
+    RegExp facebook = RegExp(r"(pod)\s*'GoogleMobileAdsMediationFacebook'");
+    String? facebookImport = appLovin.firstMatch(plistData)?.group(0);
+
     // Adding google ads dependency import when dependency import doesnt exists for google ads
     if (googleImport == null) {
       plistData += '\n$PODFILE_GOOGLE_IMPORT';
@@ -75,6 +84,11 @@ class AndroidSetup {
     // Adding appLovin ads dependency import when dependency import doesnt exists for appLovin ads
     if (_appLovin.doSetup && appLovinImport == null) {
       plistData += '\n$PODFILE_APPLOVIN_IMPORT';
+    }
+
+    // Adding facebook ads dependency import when dependency import doesnt exists for appLovin ads
+    if (_facebook.doSetup && facebookImport == null) {
+      plistData += '\n$PODFILE_FACEBOOK_IMPORT';
     }
     // Saving the updated Podfile
     await _saveFile(PODFILE_PATH, plistData);
@@ -138,6 +152,29 @@ class AndroidSetup {
       keys.insert(0, value);
       keys.insert(0, key);
     }
+
+    // Configuring facebook setup keys in info.plist
+    var array = XmlElement(XmlName('array'));
+    var dict1 = XmlElement(XmlName('dict'));
+    var key1 = XmlElement(XmlName('key'));
+    var value1 = XmlElement(XmlName('string'));
+    value1.innerText = 'v9wttpbfk9.skadnetwork';
+    key1.innerText = 'SKAdNetworkIdentifier';
+    dict1.children.add(key1);
+    dict1.children.add(value1);
+
+    var dict2 = XmlElement(XmlName('dict'));
+    var key2 = XmlElement(XmlName('key'));
+    var value2 = XmlElement(XmlName('string'));
+    value2.innerText = 'n38lu8286q.skadnetwork';
+    key2.innerText = 'SKAdNetworkIdentifier';
+    dict2.children.add(key2);
+    dict2.children.add(value2);
+
+    array.children.add(dict1);
+    array.children.add(dict2);
+
+    keys.add(array);
 
     // Prettifying (formatting) updated Info.plist data
     String updatedPlistData = document.toXmlString(pretty: true, indent: '\t');
@@ -236,6 +273,10 @@ class AndroidSetup {
       dependencies =
           _addDependency(dependencies, _appLovin.sdk, _appLovin.sdkVersion);
     }
+    if (_facebook.doSetup) {
+      dependencies =
+          _addDependency(dependencies, _facebook.sdk, _facebook.sdkVersion);
+    }
 
     var str = dependencies.join('\n');
     String updatedDependenciesBlock = "dependencies {\n$str\n}";
@@ -271,9 +312,11 @@ class AndroidSetup {
     var decodedJsonFile = json.decode(jsonAsString) as Map<String, dynamic>;
     _appLovin = AppLovin.fromJson(decodedJsonFile['AppLovin']);
     _google = Google.fromJson(decodedJsonFile['Google']);
+    _facebook = Facebook.fromJson(decodedJsonFile['Facebook']);
 
     print(_appLovin.toJson());
     print(_google.toJson());
+    print(_facebook.toJson());
 
     // Generating code file for ad unit ids in users lib/ad_unit_ids
     String adUnitIdClass = """import 'dart:io';

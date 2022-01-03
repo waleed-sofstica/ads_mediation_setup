@@ -3,7 +3,7 @@
 <plist version="1.0">
 	<dict>
 		<key>GADApplicationIdentifier</key>
-		<string>ios-app-id</string>
+		<string>ca-app-pub-3940256099942544~3347511713</string>
 		<key>AppLovinSdkKey</key>
 		<string>KEY-OF-APPLOVIN-SDK-123</string>
 		<key>CFBundleDevelopmentRegion</key>
@@ -45,5 +45,15 @@
 		</array>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<array>
+			<dict>
+				<key>SKAdNetworkIdentifier</key>
+				<string>v9wttpbfk9.skadnetwork</string>
+			</dict>
+			<dict>
+				<key>SKAdNetworkIdentifier</key>
+				<string>n38lu8286q.skadnetwork</string>
+			</dict>
+		</array>
 	</dict>
 </plist>

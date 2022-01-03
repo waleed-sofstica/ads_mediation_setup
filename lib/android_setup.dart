@@ -75,7 +75,7 @@ class AndroidSetup {
 
     // Reg expression match to find dependency import for Facebook ads
     RegExp facebook = RegExp(r"(pod)\s*'GoogleMobileAdsMediationFacebook'");
-    String? facebookImport = appLovin.firstMatch(plistData)?.group(0);
+    String? facebookImport = facebook.firstMatch(plistData)?.group(0);
 
     // Adding google ads dependency import when dependency import doesnt exists for google ads
     if (googleImport == null) {

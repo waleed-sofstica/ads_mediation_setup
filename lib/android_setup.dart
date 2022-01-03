@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'dart:io';
 
+import 'package:ads_mediation_setup/models/ad_colony.dart';
 import 'package:ads_mediation_setup/models/app_lovin.dart';
 import 'package:ads_mediation_setup/models/facebook.dart';
 import 'package:ads_mediation_setup/models/google.dart';
@@ -18,11 +19,13 @@ class AndroidSetup {
   final String PODFILE_PATH = 'ios/Podfile';
   final String AD_UNIT_ID_PATH = 'lib/ad_unit_ids/ad_unit_id.dart';
   final String MAIN_PATH = 'lib/main.dart';
+  final String GRADLE_PROPERTIES_PATH = 'android/gradle.properties';
 
   final String jsonFilePath;
   late AppLovin _appLovin;
   late Google _google;
   late Facebook _facebook;
+  late AdColony _adColony;
 
   final String APPLICATION_ID = """\n        <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
@@ -37,6 +40,9 @@ class AndroidSetup {
 
   final String PODFILE_FACEBOOK_IMPORT =
       """pod 'GoogleMobileAdsMediationFacebook'""";
+
+  final String PODFILE_ADCOLONY_IMPORT =
+      """pod 'GoogleMobileAdsMediationAdColony'""";
 
   AndroidSetup(this.jsonFilePath);
   Future<void> process() async {
@@ -57,7 +63,40 @@ class AndroidSetup {
       _buildGradleUpdate();
       _iosInfoPlistUpdate();
       _iosPodfileUpdate();
+
+      if (_adColony.doSetup) {
+        _gradlePropertiesSetup();
+      }
     });
+  }
+
+  // This is the setup just for AdColony mediation
+  // Further info : https://developers.google.com/admob/android/mediation/adcolony
+  _gradlePropertiesSetup() async {
+    // making code AndroidX compatible which is required by AdColony mediation
+    String str1 = 'android.useAndroidX=true';
+    String str2 = 'android.enableJetifier=true';
+    String data = '';
+    if (await File(GRADLE_PROPERTIES_PATH).exists()) {
+      data = await File(GRADLE_PROPERTIES_PATH).readAsString();
+    } else {
+      File(AD_UNIT_ID_PATH).create(recursive: true);
+    }
+
+    // Replaceing useAndroidX = true
+    data.replaceAll(str1, '');
+    // Replacing useAndroidX = false
+    data.replaceAll(str1.replaceAll('true', 'false'), '');
+    // Replaceing enableJetifier = true
+
+    data.replaceAll(str2, '');
+    // Replaceing enableJetifier = false
+    data.replaceAll(str2.replaceAll('true', 'false'), '');
+
+    data += '\n$str1';
+    data += '\n$str2';
+
+    _saveFile(GRADLE_PROPERTIES_PATH, data);
   }
 
   // IOS : Function to update the Podfile file (add sdk dependencies)
@@ -77,6 +116,10 @@ class AndroidSetup {
     RegExp facebook = RegExp(r"(pod)\s*'GoogleMobileAdsMediationFacebook'");
     String? facebookImport = facebook.firstMatch(plistData)?.group(0);
 
+    // Reg expression match to find dependency import for AdColony ads
+    RegExp adColony = RegExp(r"(pod)\s*'GoogleMobileAdsMediationAdColony'");
+    String? adColonyImport = adColony.firstMatch(plistData)?.group(0);
+
     // Adding google ads dependency import when dependency import doesnt exists for google ads
     if (googleImport == null) {
       plistData += '\n$PODFILE_GOOGLE_IMPORT';
@@ -86,9 +129,14 @@ class AndroidSetup {
       plistData += '\n$PODFILE_APPLOVIN_IMPORT';
     }
 
-    // Adding facebook ads dependency import when dependency import doesnt exists for appLovin ads
+    // Adding facebook ads dependency import when dependency import doesnt exists for facebook ads
     if (_facebook.doSetup && facebookImport == null) {
       plistData += '\n$PODFILE_FACEBOOK_IMPORT';
+    }
+
+    // Adding adColony ads dependency import when dependency import doesnt exists for AdColony ads
+    if (_adColony.doSetup && adColonyImport == null) {
+      plistData += '\n$PODFILE_ADCOLONY_IMPORT';
     }
     // Saving the updated Podfile
     await _saveFile(PODFILE_PATH, plistData);
@@ -278,6 +326,11 @@ class AndroidSetup {
           _addDependency(dependencies, _facebook.sdk, _facebook.sdkVersion);
     }
 
+    if (_adColony.doSetup) {
+      dependencies =
+          _addDependency(dependencies, _adColony.sdk, _adColony.sdkVersion);
+    }
+
     var str = dependencies.join('\n');
     String updatedDependenciesBlock = "dependencies {\n$str\n}";
 
@@ -313,6 +366,7 @@ class AndroidSetup {
     _appLovin = AppLovin.fromJson(decodedJsonFile['AppLovin']);
     _google = Google.fromJson(decodedJsonFile['Google']);
     _facebook = Facebook.fromJson(decodedJsonFile['Facebook']);
+    _adColony = AdColony.fromJson(decodedJsonFile['AdColony']);
 
     print(_appLovin.toJson());
     print(_google.toJson());

@@ -11,23 +11,32 @@ Performs all ad mediation setup and provide all necessary code to integrate ads 
 
 ## How To Use
 Just run following command on your flutter project
+```bash
 flutter pub run ads_mediation_setup:main <path/to/setup.json> 
+```
 
 
 ## Prerequisit
-- min kotlin version required  1.4.32 (if app is using kotlin)
-goto your android/build.gradle file, within the buildscript block replace the kotlin version with 1.4.32 at ext.kotlin_version
-Example
-buildscript {
-    ext.kotlin_version = '1.4.32'
-}
+**min kotlin version required  1.4.32 (if app is using kotlin)**
+goto your android/build.gradle file, within the buildscript block replace the kotlin version with 1.4.32 at ext.kotlin_version.
 
-- multiDexEnabled true and minSdkVersion 19
+*file : android/build.gradle*
+```groovy
+    buildscript {
+        ext.kotlin_version = '1.4.32'
+    }
+```
+
+**multiDexEnabled true and minSdkVersion 19**
 goto your android/app/build.gradle file within defaultConfig block add/replace these two lines.
 
-android {
-    defaultConfig {   
-        minSdkVersion 19   
-        multiDexEnabled true
+*file : android/app/build.gradle*
+```groovy
+    android {
+        defaultConfig {   
+            minSdkVersion 19   
+            multiDexEnabled true
+        }
     }
-}
+
+```

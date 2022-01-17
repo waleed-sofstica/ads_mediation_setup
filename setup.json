@@ -11,20 +11,20 @@
         "adManagerBannerAndroid":"",
         "interstitialAndroid":"", 
         "rewardedAndroid":"",
-        "sdkVersion":"10.2.0"
+        "sdkVersion":"7.8.0"
     }, 
     "AppLovin" : {
-        "doSetup": false, 
-        "sdk_version":"10.0.0",
+        "doSetup": true, 
+        "sdk_version":"10.3.5.0",
         "sdk_key":"KEY-OF-APPLOVIN-SDK-123"
     },
 
     "Facebook" : {
-        "doSetup": true, 
-        "sdk_version":"6.8.0.0"
+        "doSetup": false, 
+        "sdk_version":"6.0.0.0"
     }, 
     "AdColony" : {
-        "doSetup": true, 
+        "doSetup": false, 
         "sdk_version":"4.6.5.0"
     }
 }

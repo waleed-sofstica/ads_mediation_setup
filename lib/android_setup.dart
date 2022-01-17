@@ -201,28 +201,30 @@ class AndroidSetup {
       keys.insert(0, key);
     }
 
-    // Configuring facebook setup keys in info.plist
-    var array = XmlElement(XmlName('array'));
-    var dict1 = XmlElement(XmlName('dict'));
-    var key1 = XmlElement(XmlName('key'));
-    var value1 = XmlElement(XmlName('string'));
-    value1.innerText = 'v9wttpbfk9.skadnetwork';
-    key1.innerText = 'SKAdNetworkIdentifier';
-    dict1.children.add(key1);
-    dict1.children.add(value1);
+    if (_facebook.doSetup) {
+      // Configuring facebook setup keys in info.plist
+      var array = XmlElement(XmlName('array'));
+      var dict1 = XmlElement(XmlName('dict'));
+      var key1 = XmlElement(XmlName('key'));
+      var value1 = XmlElement(XmlName('string'));
+      value1.innerText = 'v9wttpbfk9.skadnetwork';
+      key1.innerText = 'SKAdNetworkIdentifier';
+      dict1.children.add(key1);
+      dict1.children.add(value1);
 
-    var dict2 = XmlElement(XmlName('dict'));
-    var key2 = XmlElement(XmlName('key'));
-    var value2 = XmlElement(XmlName('string'));
-    value2.innerText = 'n38lu8286q.skadnetwork';
-    key2.innerText = 'SKAdNetworkIdentifier';
-    dict2.children.add(key2);
-    dict2.children.add(value2);
+      var dict2 = XmlElement(XmlName('dict'));
+      var key2 = XmlElement(XmlName('key'));
+      var value2 = XmlElement(XmlName('string'));
+      value2.innerText = 'n38lu8286q.skadnetwork';
+      key2.innerText = 'SKAdNetworkIdentifier';
+      dict2.children.add(key2);
+      dict2.children.add(value2);
 
-    array.children.add(dict1);
-    array.children.add(dict2);
+      array.children.add(dict1);
+      array.children.add(dict2);
 
-    keys.add(array);
+      keys.add(array);
+    }
 
     // Prettifying (formatting) updated Info.plist data
     String updatedPlistData = document.toXmlString(pretty: true, indent: '\t');
